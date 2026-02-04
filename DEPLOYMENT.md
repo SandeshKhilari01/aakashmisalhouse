@@ -6,21 +6,27 @@ This guide provides step-by-step instructions for deploying the Aakash Misal Hou
 
 - GitHub repository: https://github.com/SandeshKhilari01/aakashmisalhouse
 - Vercel account (sign up at https://vercel.com)
-- SendGrid API key for email functionality
 
-## Required Environment Variables
+## Environment Variables
 
-The following environment variables must be configured in your Vercel project settings:
+**Good News**: No environment variables are required! The site will work without any configuration.
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `SENDGRID_API_KEY` | SendGrid API key for email sending | `SG.xxxxxxxxxxxxx` |
-| `MAIL_FROM` | Sender email address | `tech.avinyaa@gmail.com` |
-| `MAIL_TO` | Recipient email address for contact form | `sndsh.khilari@gmail.com` |
-| `NEXT_PUBLIC_TINA_CLIENT_ID` | (Optional) Tina CMS client ID | Leave empty if not using |
-| `NEXT_PUBLIC_ORGANIZATION_NAME` | (Optional) Tina organization name | Leave empty if not using |
-| `NEXT_PUBLIC_EDIT_BRANCH` | Git branch for CMS edits | `"master"` |
-| `NEXT_PUBLIC_USE_LOCAL_CLIENT` | Use local CMS client | `""` (empty) |
+### Optional Environment Variables
+
+If you want to enable specific features, you can configure these in your Vercel project settings:
+
+| Variable | Description | When Needed | Example |
+|----------|-------------|-------------|---------|
+| `SENDGRID_API_KEY` | SendGrid API key for email sending | Only if you want the contact form to actually send emails. Without this, the form works but emails won't be sent. | `SG.xxxxxxxxxxxxx` |
+| `MAIL_FROM` | Sender email address | Only needed with SendGrid | `tech.avinyaa@gmail.com` |
+| `MAIL_TO` | Recipient email address for contact form | Only needed with SendGrid | `sndsh.khilari@gmail.com` |
+| `NEXT_PUBLIC_TINA_CLIENT_ID` | Tina CMS client ID | Only if using Tina CMS | Leave empty |
+| `NEXT_PUBLIC_ORGANIZATION_NAME` | Tina organization name | Only if using Tina CMS | Leave empty |
+| `NEXT_PUBLIC_EDIT_BRANCH` | Git branch for CMS edits | Only if using Tina CMS | `"master"` |
+| `NEXT_PUBLIC_USE_LOCAL_CLIENT` | Use local CMS client | Only if using Tina CMS | `""` (empty) |
+
+> [!NOTE]
+> **Contact Form Behavior**: The contact form will display and function normally even without SendGrid configured. Form submissions will appear successful to users, but no actual emails will be sent. This is perfect for testing or if you don't need email functionality.
 
 ## Deployment Steps
 
@@ -51,18 +57,7 @@ Vercel should auto-detect Next.js. Verify the following settings:
 - **Output Directory**: `.next` (default)
 - **Install Command**: `npm install` (default)
 
-### 4. Add Environment Variables
-
-In the Vercel project configuration:
-
-1. Navigate to "Environment Variables" section
-2. Add each variable from the table above
-3. Set the appropriate values (use your actual SendGrid API key)
-4. Select environment: **Production**, **Preview**, and **Development** (check all three)
-
-**Important**: Do NOT commit `.env.local` to git. The `.gitignore` file already excludes it.
-
-### 5. Deploy
+### 4. Deploy (No Environment Variables Needed!)
 
 1. Click "Deploy"
 2. Wait for the build to complete (usually 1-3 minutes)
