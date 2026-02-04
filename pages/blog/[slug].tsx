@@ -1,11 +1,14 @@
+import fs from 'fs';
+import mm from 'gray-matter';
 import { GetStaticPropsContext, InferGetStaticPropsType } from 'next';
+import { MDXRemoteSerializeResult } from 'next-mdx-remote';
+import { serialize } from 'next-mdx-remote/serialize';
 import Head from 'next/head';
+import path from 'path';
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { staticRequest } from 'tinacms';
 import Container from 'components/Container';
 import MDXRichText from 'components/MDXRichText';
-import { NonNullableChildrenDeep } from 'types';
 import { formatDate } from 'utils/formatDate';
 import { media } from 'utils/media';
 import { getReadTime } from 'utils/readTime';
@@ -14,7 +17,6 @@ import MetadataHead from 'views/SingleArticlePage/MetadataHead';
 import OpenGraphHead from 'views/SingleArticlePage/OpenGraphHead';
 import ShareWidget from 'views/SingleArticlePage/ShareWidget';
 import StructuredDataHead from 'views/SingleArticlePage/StructuredDataHead';
-import { Posts, PostsDocument, Query } from '.tina/__generated__/types';
 
 export default function SingleArticlePage(props: InferGetStaticPropsType<typeof getStaticProps>) {
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -49,13 +51,13 @@ export default function SingleArticlePage(props: InferGetStaticPropsType<typeof 
     }
   }, []);
 
-  const { slug, data } = props;
-  const content = data.getPostsDocument.data.body;
+  const { slug, frontmatter, source } = props;
 
-  if (!data) {
+  if (!source) {
     return null;
   }
-  const { title, description, date, tags, imageUrl } = data.getPostsDocument.data as NonNullableChildrenDeep<Posts>;
+
+  const { title, description, date, tags, imageUrl } = frontmatter;
   const meta = { title, description, date: date, tags, imageUrl, author: '' };
   const formattedDate = formatDate(new Date(date));
   const absoluteImageUrl = imageUrl.replace(/\/+/, '/');
@@ -72,75 +74,40 @@ export default function SingleArticlePage(props: InferGetStaticPropsType<typeof 
       <CustomContainer id="content" ref={contentRef}>
         <ShareWidget title={title} slug={slug} />
         <Header title={title} formattedDate={formattedDate} imageUrl={absoluteImageUrl} readTime={readTime} />
-        <MDXRichText content={content} />
+        <MDXRichText content={source} />
       </CustomContainer>
     </>
   );
 }
 
 export async function getStaticPaths() {
-  const postsListData = await staticRequest({
-    query: `
-      query PostsSlugs{
-        getPostsList{
-          edges{
-            node{
-              sys{
-                basename
-              }
-            }
-          }
-        }
-      }
-    `,
-    variables: {},
-  });
+  const postsDirectory = path.join(process.cwd(), 'posts');
+  const filenames = fs.readdirSync(postsDirectory);
 
-  if (!postsListData) {
-    return {
-      paths: [],
-      fallback: false,
-    };
-  }
+  const paths = filenames.map((filename) => ({
+    params: { slug: filename.replace('.mdx', '') },
+  }));
 
-  type NullAwarePostsList = { getPostsList: NonNullableChildrenDeep<Query['getPostsList']> };
   return {
-    paths: (postsListData as NullAwarePostsList).getPostsList.edges.map((edge) => ({
-      params: { slug: normalizePostName(edge.node.sys.basename) },
-    })),
+    paths,
     fallback: false,
   };
 }
 
-function normalizePostName(postName: string) {
-  return postName.replace('.mdx', '');
-}
-
 export async function getStaticProps({ params }: GetStaticPropsContext<{ slug: string }>) {
   const { slug } = params as { slug: string };
-  const variables = { relativePath: `${slug}.mdx` };
-  const query = `
-    query BlogPostQuery($relativePath: String!) {
-      getPostsDocument(relativePath: $relativePath) {
-        data {
-          title
-          description
-          date
-          tags
-          imageUrl
-          body
-        }
-      }
-    }
-  `;
+  const filePath = path.join(process.cwd(), 'posts', `${slug}.mdx`);
+  const fileContent = fs.readFileSync(filePath, 'utf8');
 
-  const data = (await staticRequest({
-    query: query,
-    variables: variables,
-  })) as { getPostsDocument: PostsDocument };
+  const { content, data } = mm(fileContent);
+  const mdxSource = await serialize(content);
 
   return {
-    props: { slug, variables, query, data },
+    props: {
+      slug,
+      frontmatter: data as any,
+      source: mdxSource,
+    },
   };
 }
 
